@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Install Gold App</title>
+    <meta name="description" content="Download and install the latest Gold App APK directly to your device.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-effects">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <main class="container">
+        <header class="header">
+            <h1 class="title">Get the <span class="gradient-text">Gold App</span></h1>
+            <p class="subtitle">Follow the steps below to download and install the latest version on your Android device.</p>
+        </header>
+
+        <section class="card instructions-card">
+            <h2>How to Install</h2>
+            <ol class="steps-list">
+                <li>
+                    <div class="step-number">1</div>
+                    <div class="step-text">Watch the video below to understand the installation process.</div>
+                </li>
+                <li>
+                    <div class="step-number">2</div>
+                    <div class="step-text">Click the <strong>Download Latest APK</strong> button to get the file.</div>
+                </li>
+                <li>
+                    <div class="step-number">3</div>
+                    <div class="step-text">If prompted, allow installation from unknown sources in your settings.</div>
+                </li>
+                <li>
+                    <div class="step-number">4</div>
+                    <div class="step-text">Open the downloaded file and tap <strong>Install</strong>.</div>
+                </li>
+            </ol>
+        </section>
+
+        <section class="card video-card">
+            <h2>Installation Guide</h2>
+            <div class="video-container">
+                <!-- Replace the src with your actual video or YouTube embed link -->
+                <iframe 
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0" 
+                    title="Installation Guide Video" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </section>
+
+        <section class="action-section">
+            <a href="#" id="download-btn" class="download-button loading">
+                <span class="btn-text" id="btn-text">Fetching latest release...</span>
+                <span class="loader" id="btn-loader"></span>
+            </a>
+            <p id="error-msg" class="error-message"></p>
+            <p id="version-info" class="version-info"></p>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
