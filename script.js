@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchLatestRelease() {
         try {
-            const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`;
+            // Fetch all releases (this includes pre-releases, unlike /releases/latest)
+            const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases`;
             const response = await fetch(url);
             
             if (!response.ok) {
@@ -22,7 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`GitHub API error: ${response.statusText}`);
             }
 
-            const release = await response.json();
+            const releases = await response.json();
+            
+            if (!releases || releases.length === 0) {
+                throw new Error('No releases found in the repository.');
+            }
+
+            // Get the newest release (index 0)
+            const release = releases[0];
             
             // Look for an APK asset
             const apkAsset = release.assets.find(asset => asset.name.toLowerCase().endsWith('.apk'));
