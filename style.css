@@ -152,6 +152,23 @@ body {
     line-height: 1;
 }
 
+/* Promo Video */
+.promo-video-container {
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    background: #000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.promo-video {
+    width: 100%;
+    max-height: 55vh;
+    display: block;
+    object-fit: contain;
+}
+
 /* Action Bar */
 .action-bar {
     display: flex;
@@ -268,24 +285,41 @@ body {
     font-weight: 600;
 }
 
-.media-preview {
+.screenshots-section {
     margin-top: 10px;
 }
 
-.video-container {
-    position: relative;
-    padding-bottom: 56.25%;
-    height: 0;
-    overflow: hidden;
-    border-radius: 16px;
-    background: #000;
-    border: 1px solid var(--divider);
+.screenshots-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 16px;
+    padding-bottom: 16px; /* space for scrollbar */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
 }
 
-.video-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+.screenshots-container::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+}
+
+.screenshot {
+    height: 480px; /* Standard phone height ratio */
+    width: auto;
+    border-radius: 16px;
+    scroll-snap-align: center;
+    border: 1px solid var(--divider);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    background-color: var(--card-bg);
+}
+
+@media (max-width: 600px) {
+    .screenshot {
+        height: 400px;
+    }
+}
+@media (max-width: 400px) {
+    .screenshot {
+        height: 340px;
+    }
 }
