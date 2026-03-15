@@ -323,3 +323,114 @@ body {
         height: 340px;
     }
 }
+
+/* Fullscreen Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.show {
+    opacity: 1;
+}
+
+.modal-content {
+    margin: auto;
+    display: block;
+    max-width: 90%;
+    max-height: 85vh;
+    border-radius: 12px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 101;
+    transition: color 0.2s;
+    user-select: none;
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: #bbb;
+    text-decoration: none;
+}
+
+.nav-btn {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    width: auto;
+    padding: 20px;
+    margin-top: -30px;
+    color: white;
+    font-weight: bold;
+    font-size: 30px;
+    transition: 0.3s ease;
+    border-radius: 0 5px 5px 0;
+    user-select: none;
+    z-index: 101;
+    background-color: rgba(0,0,0,0.3);
+}
+
+.nav-btn:hover {
+    background-color: rgba(0,0,0,0.8);
+}
+
+.prev-btn {
+    left: 10px;
+    border-radius: 5px;
+}
+
+.next-btn {
+    right: 10px;
+    border-radius: 5px;
+}
+
+.modal-caption {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 700px;
+    text-align: center;
+    color: #ccc;
+    padding: 10px 0;
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 16px;
+}
+
+@media only screen and (max-width: 600px) {
+    .modal-content {
+        max-width: 95%;
+    }
+    .nav-btn {
+        padding: 15px 10px;
+        font-size: 24px;
+    }
+    .prev-btn { left: 0px; }
+    .next-btn { right: 0px; }
+}
