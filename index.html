@@ -1,73 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Install Gold App</title>
-    <meta name="description" content="Download and install the latest Gold App APK directly to your device.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gold App - Download</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="background-effects">
-        <div class="glow-orb orb-1"></div>
-        <div class="glow-orb orb-2"></div>
-    </div>
 
+<body>
     <main class="container">
-        <header class="header">
-            <h1 class="title">Get the <span class="gradient-text">Gold App</span></h1>
-            <p class="subtitle">Follow the steps below to download and install the latest version on your Android device.</p>
+        <!-- App Header info -->
+        <header class="app-header">
+            <div class="app-icon-container">
+                <div class="app-icon">
+                    <!-- Custom Gold App icon -->
+                    <span class="icon-text">G</span>
+                </div>
+            </div>
+            <div class="app-meta">
+                <h1 class="app-title">Gold App</h1>
+                <p class="app-developer">TDF-Daimonds-Tech</p>
+                <div class="app-stats">
+                    <!-- <div class="stat">
+                        <span class="stat-value">4.9 ★</span>
+                        <span class="stat-label">12K Ratings</span>
+                    </div> -->
+                    <!-- <div class="stat divider">•</div> -->
+                    <div class="stat">
+                        <span class="stat-value" id="app-size-display">-- MB</span>
+                        <span class="stat-label">Size</span>
+                    </div>
+                </div>
+            </div>
         </header>
 
-        <section class="card instructions-card">
-            <h2>How to Install</h2>
-            <ol class="steps-list">
-                <li>
-                    <div class="step-number">1</div>
-                    <div class="step-text">Watch the video below to understand the installation process.</div>
-                </li>
-                <li>
-                    <div class="step-number">2</div>
-                    <div class="step-text">Click the <strong>Download Latest APK</strong> button to get the file.</div>
-                </li>
-                <li>
-                    <div class="step-number">3</div>
-                    <div class="step-text">If prompted, allow installation from unknown sources in your settings.</div>
-                </li>
-                <li>
-                    <div class="step-number">4</div>
-                    <div class="step-text">Open the downloaded file and tap <strong>Install</strong>.</div>
-                </li>
-            </ol>
-        </section>
-
-        <section class="card video-card">
-            <h2>Installation Guide</h2>
-            <div class="video-container">
-                <!-- Replace the src with your actual video or YouTube embed link -->
-                <iframe 
-                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0" 
-                    title="Installation Guide Video" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen>
-                </iframe>
+        <!-- Top Download Button -->
+        <div class="action-bar">
+            <a href="#" id="download-btn" class="install-button loading">
+                <span class="btn-text" id="btn-text">Install</span>
+                <span class="loader" id="btn-loader"></span>
+            </a>
+            <p id="version-info" class="version-info">Fetching version...</p>
+            <p id="error-msg" class="error-message"></p>
+        </div>
+        <!-- Instructions -->
+        <section class="section">
+            <h2 class="section-title">How to Install</h2>
+            <div class="instructions-card">
+                <p class="section-text">
+                    1. Tap the <strong>Install</strong> button above.<br><br>
+                    2. If prompted, go to your phone's Settings &gt; Security and allow installation from
+                    <strong>Unknown Sources</strong>.<br><br>
+                    3. Open the downloaded APK file from your notifications or valid downloads folder and tap
+                    <strong>Install</strong>.
+                </p>
             </div>
         </section>
 
-        <section class="action-section">
-            <a href="#" id="download-btn" class="download-button loading">
-                <span class="btn-text" id="btn-text">Fetching latest release...</span>
-                <span class="loader" id="btn-loader"></span>
-            </a>
-            <p id="error-msg" class="error-message"></p>
-            <p id="version-info" class="version-info"></p>
+        <!-- Previews (Video) -->
+        <section class="section">
+            <h2 class="section-title">Video Preview</h2>
+            <div class="media-preview">
+                <!-- Video Embed -->
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0" title="Installation Video"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
         </section>
+
+
+
     </main>
 
     <script src="script.js"></script>
 </body>
+
 </html>

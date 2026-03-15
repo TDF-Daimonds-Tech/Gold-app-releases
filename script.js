@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnText = document.getElementById('btn-text');
     const errorMsg = document.getElementById('error-msg');
     const versionInfo = document.getElementById('version-info');
+    const appSizeDisplay = document.getElementById('app-size-display');
 
     // GitHub Repo info
     const REPO_OWNER = 'TDF-Daimonds-Tech';
@@ -43,22 +44,24 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadBtn.classList.remove('loading');
         
         // Format size
-        const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
+        const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(1);
         
         // Update button text and link
-        btnText.textContent = `Download Latest APK`;
+        btnText.textContent = `Install`;
         downloadBtn.href = downloadUrl;
         
         // Show version info
-        versionInfo.textContent = `Version ${versionTag} • ${sizeMB} MB`;
-        versionInfo.style.display = 'block';
+        versionInfo.textContent = `Version ${versionTag}`;
+        if (appSizeDisplay) {
+            appSizeDisplay.textContent = `${sizeMB} MB`;
+        }
     }
 
     function showError(message) {
         downloadBtn.classList.remove('loading');
-        btnText.textContent = 'Download Unavailable';
-        downloadBtn.style.background = '#2d333b'; // Disabled state
-        downloadBtn.style.color = '#8b949e';
+        btnText.textContent = 'Unavailable';
+        downloadBtn.style.background = 'var(--divider, #e5e5ea)'; // Disabled state
+        downloadBtn.style.color = 'var(--text-secondary, #8e8e93)';
         downloadBtn.style.pointerEvents = 'none';
 
         errorMsg.textContent = message;
