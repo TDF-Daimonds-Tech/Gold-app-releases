@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorMsg = document.getElementById('error-msg');
     const versionInfo = document.getElementById('version-info');
     const appSizeDisplay = document.getElementById('app-size-display');
+    const releaseNameDisplay = document.getElementById('release-name-display');
 
     // GitHub Repo info
     const REPO_OWNER = 'TDF-Daimonds-Tech';
@@ -31,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Successfully found the APK
-            setupDownloadButton(apkAsset.browser_download_url, release.tag_name, apkAsset.size);
+            setupDownloadButton(apkAsset.browser_download_url, release.tag_name, apkAsset.size, release.name);
 
         } catch (error) {
             console.error('Error fetching release:', error);
@@ -39,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function setupDownloadButton(downloadUrl, versionTag, sizeBytes) {
+    function setupDownloadButton(downloadUrl, versionTag, sizeBytes, releaseName) {
         // Remove loading state
         downloadBtn.classList.remove('loading');
         
@@ -54,6 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
         versionInfo.textContent = `Version ${versionTag}`;
         if (appSizeDisplay) {
             appSizeDisplay.textContent = `${sizeMB} MB`;
+        }
+        if (releaseNameDisplay && releaseName) {
+            releaseNameDisplay.textContent = releaseName;
         }
     }
 
