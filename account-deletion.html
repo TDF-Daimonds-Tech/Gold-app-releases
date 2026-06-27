@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Deletion - TDFGIP App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f2f2f6;
+            --surface-color: #ffffff;
+            --text-primary: #000000;
+            --text-secondary: #8e8e93;
+            --accent-color: #007aff;
+            --divider: #e5e5ea;
+            --card-bg: #ffffff;
+            --gold-start: #FFDF00;
+            --gold-end: #D4AF37;
+            --danger: #ff3b30;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --surface-color: #1c1c1e;
+                --text-primary: #ffffff;
+                --text-secondary: #98989d;
+                --accent-color: #0a84ff;
+                --divider: #38383a;
+                --card-bg: #1c1c1e;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: '-apple-system', 'BlinkMacSystemFont', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px 60px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px 16px 40px;
+            }
+        }
+
+        .app-header {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--divider);
+        }
+
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--gold-start), var(--gold-end));
+            border-radius: 22%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+        }
+
+        .icon-text {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .app-meta {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .app-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .app-developer {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        .section {
+            margin-bottom: 28px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--divider);
+        }
+
+        .steps-list {
+            list-style: none;
+            counter-reset: steps;
+        }
+
+        .steps-list li {
+            counter-increment: steps;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--divider);
+            font-size: 15px;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        .steps-list li:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .steps-list li:first-child {
+            padding-top: 0;
+        }
+
+        .step-number {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--gold-start), var(--gold-end));
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .info-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .info-text a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .data-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .data-list li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--divider);
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+
+        .data-list li:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .data-list li:first-child {
+            padding-top: 0;
+        }
+
+        .dot-deleted {
+            width: 8px;
+            height: 8px;
+            background-color: var(--danger);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot-retained {
+            width: 8px;
+            height: 8px;
+            background-color: #ff9500;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .badge-deleted {
+            background-color: rgba(255, 59, 48, 0.12);
+            color: var(--danger);
+        }
+
+        .badge-retained {
+            background-color: rgba(255, 149, 0, 0.12);
+            color: #ff9500;
+        }
+
+        .review-banner {
+            background: linear-gradient(135deg, rgba(255, 223, 0, 0.1), rgba(212, 175, 55, 0.1));
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+
+        .review-icon {
+            font-size: 28px;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .review-content {
+            flex: 1;
+        }
+
+        .review-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .review-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .retained-note {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--divider);
+        }
+
+        .contact-card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .contact-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+
+        .contact-label {
+            font-weight: 600;
+            min-width: 55px;
+        }
+
+        .contact-row a {
+            color: var(--accent-color);
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--divider);
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <header class="app-header">
+            <div class="app-icon">
+                <span class="icon-text">G</span>
+            </div>
+            <div class="app-meta">
+                <h1 class="app-title">TDFGIP App</h1>
+                <p class="app-developer">TDF Jewellery</p>
+            </div>
+        </header>
+
+        <h2 class="page-title">Account Deletion Request</h2>
+        <p class="page-subtitle">You can request permanent deletion of your TDFGIP App account and associated data. All deletion requests are reviewed by our team before processing.</p>
+
+        <div class="review-banner">
+            <span class="review-icon">&#128337;</span>
+            <div class="review-content">
+                <p class="review-title">Review Period: 7-8 Business Days</p>
+                <p class="review-text">All account deletion requests are stored and reviewed within 7-8 business days. During this period your account will be marked as "pending deletion." You may contact us to cancel the request before it is processed.</p>
+            </div>
+        </div>
+
+        <section class="section">
+            <h3 class="section-title">How to Request Deletion</h3>
+            <div class="card">
+                <ol class="steps-list">
+                    <li>
+                        <span class="step-number">1</span>
+                        <span>Open the <strong>TDFGIP App</strong> on your device and log in to your account.</span>
+                    </li>
+                    <li>
+                        <span class="step-number">2</span>
+                        <span>Go to <strong>Profile</strong> &rarr; <strong>Settings</strong> &rarr; <strong>Delete Account</strong>.</span>
+                    </li>
+                    <li>
+                        <span class="step-number">3</span>
+                        <span>Verify your identity using your registered mobile number via OTP.</span>
+                    </li>
+                    <li>
+                        <span class="step-number">4</span>
+                        <span>Confirm and submit your account deletion request.</span>
+                    </li>
+                </ol>
+            </div>
+            <div class="card" style="margin-top: 12px;">
+                <p class="info-text">Alternatively, you can email us at <a href="mailto:admindesk@tdfjewellery.com">admindesk@tdfjewellery.com</a> with the subject line <strong>"Account Deletion Request"</strong> from the email or phone number linked to your account.</p>
+            </div>
+        </section>
+
+        <section class="section">
+            <h3 class="section-title">Data That Will Be Deleted</h3>
+            <div class="card">
+                <span class="badge badge-deleted">Permanently Deleted</span>
+                <ul class="data-list">
+                    <li><span class="dot-deleted"></span>Personal profile information (name, email, phone number)</li>
+                    <li><span class="dot-deleted"></span>Login credentials and authentication tokens</li>
+                    <li><span class="dot-deleted"></span>KYC documents and verification data</li>
+                    <li><span class="dot-deleted"></span>Push notification tokens and device information</li>
+                    <li><span class="dot-deleted"></span>App preferences and settings</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="section">
+            <h3 class="section-title">Data That May Be Retained</h3>
+            <div class="card">
+                <span class="badge badge-retained">Retained for Compliance</span>
+                <ul class="data-list">
+                    <li><span class="dot-retained"></span>Transaction and payment records (up to 8 years)</li>
+                    <li><span class="dot-retained"></span>Savings scheme records and instalment history (up to 8 years)</li>
+                    <li><span class="dot-retained"></span>Invoice and billing records (as per tax regulations)</li>
+                </ul>
+                <p class="retained-note">Retained data is required under the Income Tax Act and GST regulations of India. It will be anonymized where possible and used only for legal and compliance obligations. Once the retention period expires, this data will also be permanently deleted.</p>
+            </div>
+        </section>
+
+        <section class="section">
+            <h3 class="section-title">Contact Us</h3>
+            <div class="card">
+                <div class="contact-card">
+                    <div class="contact-row">
+                        <span class="contact-label">Email:</span>
+                        <a href="mailto:admindesk@tdfjewellery.com">admindesk@tdfjewellery.com</a>
+                    </div>
+                    <div class="contact-row">
+                        <span class="contact-label">Website:</span>
+                        <a href="https://tdfjewellery.com" target="_blank" rel="noopener">tdfjewellery.com</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>&copy; 2026 TDF Jewellery. All rights reserved.</p>
+            <p>TDFGIP App &mdash; Account Deletion Policy</p>
+        </footer>
+    </main>
+</body>
+
+</html>
