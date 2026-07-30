@@ -84,11 +84,17 @@ jobs:
       # Bubblewrap 1.24 shells out to zipalign/apksigner from build-tools 34.0.0
       # while the project it generates compiles against SDK 36 (AGP 8.9.1).
       SDK_PACKAGES: 'platform-tools platforms;android-36 build-tools;34.0.0 build-tools;35.0.0 build-tools;36.0.0'
-      WORK_DIR: ${{ runner.temp }}/twa-${{ matrix.app.id }}
       DRY_RUN: ${{ inputs.dry_run == true }}
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve work dir
+        # The runner context is not available in job-level env, so RUNNER_TEMP
+        # has to be expanded from inside a step.
+        env:
+          APP_ID: ${{ matrix.app.id }}
+        run: echo "WORK_DIR=$RUNNER_TEMP/twa-$APP_ID" >> "$GITHUB_ENV"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
