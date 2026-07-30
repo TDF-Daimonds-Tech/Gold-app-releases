@@ -1,21 +1,53 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const downloadBtn = document.getElementById('download-btn');
-    const btnText = document.getElementById('btn-text');
-    const errorMsg = document.getElementById('error-msg');
-    const versionInfo = document.getElementById('version-info');
-    const appSizeDisplay = document.getElementById('app-size-display');
-    const releaseNameDisplay = document.getElementById('release-name-display');
+    // Each app on this page installs from the newest GitHub Release that matches
+    // its tagPrefix ('' = newest release of the repo, whatever it is tagged).
+    const APPS = [
+        {
+            name: 'Gold App',
+            repo: 'TDF-Daimonds-Tech/Gold-app-releases',
+            tagPrefix: '',
+            ids: {
+                button: 'download-btn',
+                buttonText: 'btn-text',
+                versionInfo: 'version-info',
+                errorMsg: 'error-msg',
+                size: 'app-size-display',
+                releaseName: 'release-name-display',
+            },
+        },
+        {
+            // Built by .github/workflows/android-twa.yml from android/tms
+            name: 'TDF Task Manager',
+            repo: 'TDF-Daimonds-Tech/Gold-app-web',
+            tagPrefix: 'tms-v',
+            ids: {
+                button: 'tms-download-btn',
+                buttonText: 'tms-btn-text',
+                versionInfo: 'tms-version-info',
+                errorMsg: 'tms-error-msg',
+                size: 'tms-app-size',
+                releaseName: 'tms-release-name',
+            },
+        },
+    ];
 
-    // GitHub Repo info
-    const REPO_OWNER = 'TDF-Daimonds-Tech';
-    const REPO_NAME = 'Gold-app-releases';
+    function resolveElements(ids) {
+        const els = {};
+        Object.entries(ids).forEach(([key, id]) => {
+            els[key] = document.getElementById(id);
+        });
+        return els;
+    }
 
-    async function fetchLatestRelease() {
+    async function fetchLatestRelease(app) {
+        const els = resolveElements(app.ids);
+        if (!els.button) return; // app not present on this page
+
         try {
             // Fetch all releases (this includes pre-releases, unlike /releases/latest)
-            const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases`;
+            const url = `https://api.github.com/repos/${app.repo}/releases`;
             const response = await fetch(url);
-            
+
             if (!response.ok) {
                 if (response.status === 404) {
                     throw new Error('No releases found in the repository.');
@@ -24,14 +56,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const releases = await response.json();
-            
+
             if (!releases || releases.length === 0) {
                 throw new Error('No releases found in the repository.');
             }
 
-            // Get the newest release (index 0)
-            const release = releases[0];
-            
+            // Newest release for this app (the API returns them newest first)
+            const release = releases.find(r => r.tag_name.startsWith(app.tagPrefix));
+
+            if (!release) {
+                throw new Error('No releases found in the repository.');
+            }
+
             // Look for an APK asset
             const apkAsset = release.assets.find(asset => asset.name.toLowerCase().endsWith('.apk'));
 
@@ -40,44 +76,45 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Successfully found the APK
-            setupDownloadButton(apkAsset.browser_download_url, release.tag_name, apkAsset.size, release.name);
+            const version = release.tag_name.slice(app.tagPrefix.length);
+            setupDownloadButton(els, apkAsset.browser_download_url, version, apkAsset.size, release.name);
 
         } catch (error) {
-            console.error('Error fetching release:', error);
-            showError(error.message || 'Failed to fetch the latest APK. Please try again later.');
+            console.error(`Error fetching release for ${app.name}:`, error);
+            showError(els, error.message || 'Failed to fetch the latest APK. Please try again later.');
         }
     }
 
-    function setupDownloadButton(downloadUrl, versionTag, sizeBytes, releaseName) {
+    function setupDownloadButton(els, downloadUrl, versionTag, sizeBytes, releaseName) {
         // Remove loading state
-        downloadBtn.classList.remove('loading');
-        
+        els.button.classList.remove('loading');
+
         // Format size
         const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(1);
-        
+
         // Update button text and link
-        btnText.textContent = `Install`;
-        downloadBtn.href = downloadUrl;
-        
+        els.buttonText.textContent = `Install`;
+        els.button.href = downloadUrl;
+
         // Show version info
-        versionInfo.textContent = `Version ${versionTag}`;
-        if (appSizeDisplay) {
-            appSizeDisplay.textContent = `${sizeMB} MB`;
+        els.versionInfo.textContent = `Version ${versionTag}`;
+        if (els.size) {
+            els.size.textContent = `${sizeMB} MB`;
         }
-        if (releaseNameDisplay && releaseName) {
-            releaseNameDisplay.textContent = releaseName;
+        if (els.releaseName && releaseName) {
+            els.releaseName.textContent = releaseName;
         }
     }
 
-    function showError(message) {
-        downloadBtn.classList.remove('loading');
-        btnText.textContent = 'Unavailable';
-        downloadBtn.style.background = 'var(--divider, #e5e5ea)'; // Disabled state
-        downloadBtn.style.color = 'var(--text-secondary, #8e8e93)';
-        downloadBtn.style.pointerEvents = 'none';
+    function showError(els, message) {
+        els.button.classList.remove('loading');
+        els.buttonText.textContent = 'Unavailable';
+        els.button.style.background = 'var(--divider, #e5e5ea)'; // Disabled state
+        els.button.style.color = 'var(--text-secondary, #8e8e93)';
+        els.button.style.pointerEvents = 'none';
 
-        errorMsg.textContent = message;
-        errorMsg.style.display = 'block';
+        els.errorMsg.textContent = message;
+        els.errorMsg.style.display = 'block';
     }
 
     // Modal Image Gallery Logic
@@ -165,5 +202,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initialize
-    fetchLatestRelease();
+    APPS.forEach(app => fetchLatestRelease(app));
 });

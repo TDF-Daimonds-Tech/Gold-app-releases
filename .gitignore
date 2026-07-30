@@ -1,0 +1,12 @@
+.vercel
+
+# Android signing material - never commit these
+.keys/
+*.keystore
+*.jks
+*.keystore.base64
+
+# Local Bubblewrap output
+android-twa/
+*.apk
+*.aab

@@ -1,0 +1,363 @@
+name: Android APK (TWA)
+
+# Wraps the PWAs listed in android/apps.json into signed Android apps with
+# Bubblewrap (Trusted Web Activity) and publishes app-release-signed.apk +
+# app-release-bundle.aab to a GitHub Release.
+#
+# One-time setup (signing key + secrets) is documented in android/README.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App id from android/apps.json, or "all"'
+        required: true
+        default: 'all'
+        type: string
+      version_name:
+        description: 'Version name override, e.g. 1.2.0 (blank = <versionNameBase>.<run number>)'
+        required: false
+        default: ''
+        type: string
+      prerelease:
+        description: 'Mark the GitHub Release as a pre-release'
+        required: false
+        default: false
+        type: boolean
+      dry_run:
+        description: 'Build only, no Release (falls back to a throwaway key if no keystore secret)'
+        required: false
+        default: false
+        type: boolean
+  push:
+    # Tag as <appId>-v<version>, e.g. tms-v1.2.0. Add a line per app id.
+    tags:
+      - 'tms-v*'
+
+concurrency:
+  group: android-twa-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Select apps
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve app matrix
+        id: select
+        env:
+          APP_INPUT: ${{ inputs.app }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            # tms-v1.2.0 -> tms
+            select="${GITHUB_REF_NAME%%-v*}"
+          else
+            select="${APP_INPUT:-all}"
+          fi
+          echo "Requested: $select"
+          matrix=$(jq -c --arg sel "$select" '[ .[] | select($sel == "all" or .id == $sel) ]' android/apps.json)
+          if [ "$(printf '%s' "$matrix" | jq 'length')" -eq 0 ]; then
+            echo "::error::No entry in android/apps.json matches '$select'."
+            exit 1
+          fi
+          printf '%s' "$matrix" | jq -r '.[] | "  - \(.id) (\(.packageId))"'
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.app.id }}
+    needs: plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJson(needs.plan.outputs.matrix) }}
+    env:
+      BUBBLEWRAP_VERSION: '1.24.1'
+      CMDLINE_TOOLS_VERSION: '11076708'
+      # Bubblewrap 1.24 shells out to zipalign/apksigner from build-tools 34.0.0
+      # while the project it generates compiles against SDK 36 (AGP 8.9.1).
+      SDK_PACKAGES: 'platform-tools platforms;android-36 build-tools;34.0.0 build-tools;35.0.0 build-tools;36.0.0'
+      WORK_DIR: ${{ runner.temp }}/twa-${{ matrix.app.id }}
+      DRY_RUN: ${{ inputs.dry_run == true }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Resolve version
+        id: version
+        env:
+          VERSION_INPUT: ${{ inputs.version_name }}
+          VERSION_NAME_BASE: ${{ matrix.app.versionNameBase }}
+          VERSION_CODE_OFFSET: ${{ matrix.app.versionCodeOffset }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            version_name="${GITHUB_REF_NAME#*-v}"
+          elif [ -n "$VERSION_INPUT" ]; then
+            version_name="$VERSION_INPUT"
+          else
+            version_name="${VERSION_NAME_BASE:-1.0}.${GITHUB_RUN_NUMBER}"
+          fi
+          # versionCode must never go down between releases, so it tracks the
+          # monotonically increasing workflow run number.
+          version_code=$(( GITHUB_RUN_NUMBER + ${VERSION_CODE_OFFSET:-0} ))
+          echo "name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "Building ${{ matrix.app.id }} $version_name (versionCode $version_code)"
+
+      - name: Set up Android SDK
+        run: |
+          set -euo pipefail
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [ -z "$sdk" ] || [ ! -d "$sdk" ]; then
+            sdk="$HOME/android-sdk"
+            echo "No pre-installed SDK found, installing command line tools into $sdk"
+            mkdir -p "$sdk/cmdline-tools" "$RUNNER_TEMP/ct"
+            curl -fsSL -o "$RUNNER_TEMP/cmdline-tools.zip" \
+              "https://dl.google.com/android/repository/commandlinetools-linux-${CMDLINE_TOOLS_VERSION}_latest.zip"
+            unzip -q "$RUNNER_TEMP/cmdline-tools.zip" -d "$RUNNER_TEMP/ct"
+            mv "$RUNNER_TEMP/ct/cmdline-tools" "$sdk/cmdline-tools/latest"
+          fi
+
+          sdkmanager=""
+          for candidate in "$sdk/cmdline-tools/latest/bin/sdkmanager" "$sdk/bin/sdkmanager" "$sdk/tools/bin/sdkmanager"; do
+            if [ -x "$candidate" ]; then
+              sdkmanager="$candidate"
+              break
+            fi
+          done
+          if [ -z "$sdkmanager" ]; then
+            echo "::error::Could not find sdkmanager under $sdk"
+            exit 1
+          fi
+
+          # Bubblewrap only accepts an SDK root that has bin/ or tools/ at the top
+          # level (AndroidSdkTools.validatePath), which the runner image does not.
+          if [ ! -e "$sdk/bin" ] && [ ! -e "$sdk/tools" ]; then
+            ln -s "$(dirname "$sdkmanager")" "$sdk/bin"
+          fi
+
+          yes | "$sdkmanager" --sdk_root="$sdk" --licenses > /dev/null 2>&1 || true
+          # shellcheck disable=SC2086
+          "$sdkmanager" --sdk_root="$sdk" $SDK_PACKAGES > /dev/null
+
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk" >> "$GITHUB_ENV"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-twa-${{ env.BUBBLEWRAP_VERSION }}-${{ hashFiles('android/*/twa-manifest.json') }}
+          restore-keys: |
+            gradle-twa-${{ env.BUBBLEWRAP_VERSION }}-
+            gradle-twa-
+
+      - name: Install Bubblewrap
+        run: |
+          set -euo pipefail
+          npm install -g "@bubblewrap/cli@${BUBBLEWRAP_VERSION}"
+          mkdir -p "$HOME/.bubblewrap"
+          # Pre-seeding the config is what keeps `bubblewrap` non-interactive: with
+          # both paths set it never prompts to download a JDK/SDK of its own.
+          jq -n --arg jdk "$JAVA_HOME" --arg sdk "$ANDROID_HOME" \
+            '{jdkPath: $jdk, androidSdkPath: $sdk}' > "$HOME/.bubblewrap/config.json"
+          cat "$HOME/.bubblewrap/config.json"
+          bubblewrap doctor || true
+
+      - name: Build signed APK + AAB
+        id: build
+        env:
+          APP_DIR: ${{ matrix.app.dir }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          KEYSTORE_B64: ${{ secrets[matrix.app.keystoreSecret] || secrets.ANDROID_KEYSTORE_BASE64 }}
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets[matrix.app.keystorePasswordSecret] || secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets[matrix.app.keyPasswordSecret] || secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$WORK_DIR"
+          cp "$GITHUB_WORKSPACE/$APP_DIR/twa-manifest.json" "$WORK_DIR/twa-manifest.json"
+          cd "$WORK_DIR"
+
+          jq --arg vn "$VERSION_NAME" --argjson vc "$VERSION_CODE" \
+            '.appVersion = $vn | .appVersionName = $vn | .appVersionCode = $vc' \
+            twa-manifest.json > twa-manifest.tmp && mv twa-manifest.tmp twa-manifest.json
+
+          alias_name=$(jq -r '.signingKey.alias' twa-manifest.json)
+          keystore=$(jq -r '.signingKey.path' twa-manifest.json)
+
+          if [ -n "${KEYSTORE_B64:-}" ]; then
+            if [ -z "${BUBBLEWRAP_KEYSTORE_PASSWORD:-}" ] || [ -z "${BUBBLEWRAP_KEY_PASSWORD:-}" ]; then
+              echo "::error::Keystore secret is set but the password secrets are not. See android/README.md."
+              exit 1
+            fi
+            # tr: tolerate line breaks / stray whitespace in a pasted secret
+            printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]' | base64 --decode > "$keystore"
+            if ! "$JAVA_HOME/bin/keytool" -list -keystore "$keystore" -alias "$alias_name" \
+                 -storepass "$BUBBLEWRAP_KEYSTORE_PASSWORD" > /dev/null 2>&1; then
+              echo "::error::Could not read alias '$alias_name' from the keystore - check the keystore secret is valid base64 and the password secret matches. See android/README.md."
+              exit 1
+            fi
+            echo "signing_key=repository secret" >> "$GITHUB_OUTPUT"
+          elif [ "$DRY_RUN" = "true" ]; then
+            echo "::warning::No keystore secret found - generating a THROWAWAY key. These builds cannot be updated in place and must not be distributed."
+            export BUBBLEWRAP_KEYSTORE_PASSWORD="$(openssl rand -hex 16)"
+            export BUBBLEWRAP_KEY_PASSWORD="$BUBBLEWRAP_KEYSTORE_PASSWORD"
+            "$JAVA_HOME/bin/keytool" -genkeypair -keystore "$keystore" -alias "$alias_name" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$BUBBLEWRAP_KEYSTORE_PASSWORD" -keypass "$BUBBLEWRAP_KEY_PASSWORD" \
+              -dname "CN=Throwaway CI key, O=TDF, C=IN"
+            echo "signing_key=throwaway (dry run)" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::No signing keystore. Add the ${{ matrix.app.keystoreSecret }} / ${{ matrix.app.keystorePasswordSecret }} / ${{ matrix.app.keyPasswordSecret }} secrets (see android/README.md), or re-run with dry_run enabled."
+            exit 1
+          fi
+
+          # Regenerates the Android project from twa-manifest.json and writes
+          # manifest-checksum.txt, which is what stops `build` from prompting.
+          bubblewrap update --skipVersionUpgrade
+
+          # The template still lists the shut-down jcenter repository.
+          sed -i 's/jcenter()/mavenCentral()/g' build.gradle app/build.gradle
+
+          bubblewrap build --skipPwaValidation
+
+          # No `exit` in awk: under pipefail an early exit can SIGPIPE keytool.
+          fingerprint=$("$JAVA_HOME/bin/keytool" -list -v -keystore "$keystore" -alias "$alias_name" \
+            -storepass "$BUBBLEWRAP_KEYSTORE_PASSWORD" | awk '/SHA256:/ && !seen {print $2; seen=1}')
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+          rm -f "$keystore"
+
+      - name: Collect artifacts
+        id: artifacts
+        env:
+          ASSET_BASE_NAME: ${{ matrix.app.assetBaseName }}
+          PACKAGE_ID: ${{ matrix.app.packageId }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          FINGERPRINT: ${{ steps.build.outputs.fingerprint }}
+        run: |
+          set -euo pipefail
+          out="$WORK_DIR/out"
+          mkdir -p "$out"
+          cp "$WORK_DIR/app-release-signed.apk" "$out/${ASSET_BASE_NAME}-${VERSION_NAME}.apk"
+          cp "$WORK_DIR/app-release-bundle.aab" "$out/${ASSET_BASE_NAME}-${VERSION_NAME}.aab"
+
+          # Digital Asset Links file for the site, so Chrome drops the URL bar.
+          jq -n --arg pkg "$PACKAGE_ID" --arg fp "$FINGERPRINT" '[{
+            relation: ["delegate_permission/common.handle_all_urls"],
+            target: {namespace: "android_app", package_name: $pkg, sha256_cert_fingerprints: [$fp]}
+          }]' > "$out/assetlinks.json"
+
+          apk="$out/${ASSET_BASE_NAME}-${VERSION_NAME}.apk"
+          echo "out_dir=$out" >> "$GITHUB_OUTPUT"
+          echo "apk=$apk" >> "$GITHUB_OUTPUT"
+          echo "aab=$out/${ASSET_BASE_NAME}-${VERSION_NAME}.aab" >> "$GITHUB_OUTPUT"
+          echo "apk_size=$(( $(stat -c%s "$apk") / 1024 / 1024 )) MB" >> "$GITHUB_OUTPUT"
+          echo "apk_sha256=$(sha256sum "$apk" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          ls -lh "$out"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app.id }}-${{ steps.version.outputs.name }}
+          path: ${{ steps.artifacts.outputs.out_dir }}/*
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: ${{ inputs.dry_run != true }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN || secrets.GITHUB_TOKEN }}
+          RELEASE_REPO: ${{ matrix.app.releaseRepo || github.repository }}
+          TAG: ${{ matrix.app.tagPrefix }}${{ steps.version.outputs.name }}
+          TITLE: ${{ matrix.app.displayName }} ${{ steps.version.outputs.name }}
+          PACKAGE_ID: ${{ matrix.app.packageId }}
+          MANIFEST_URL: ${{ matrix.app.manifestUrl }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          FINGERPRINT: ${{ steps.build.outputs.fingerprint }}
+          APK: ${{ steps.artifacts.outputs.apk }}
+          AAB: ${{ steps.artifacts.outputs.aab }}
+          OUT_DIR: ${{ steps.artifacts.outputs.out_dir }}
+          APK_SHA256: ${{ steps.artifacts.outputs.apk_sha256 }}
+          PRERELEASE: ${{ inputs.prerelease == true }}
+        run: |
+          set -euo pipefail
+          notes="$RUNNER_TEMP/notes-${{ matrix.app.id }}.md"
+          host=$(printf '%s' "$MANIFEST_URL" | awk -F/ '{print $3}')
+          cat > "$notes" <<EOF
+          Trusted Web Activity build of [$MANIFEST_URL]($MANIFEST_URL), generated with Bubblewrap $BUBBLEWRAP_VERSION.
+
+          | | |
+          |---|---|
+          | Package | \`$PACKAGE_ID\` |
+          | versionName | \`${{ steps.version.outputs.name }}\` |
+          | versionCode | \`$VERSION_CODE\` |
+          | Signing key | ${{ steps.build.outputs.signing_key }} |
+          | APK SHA-256 | \`$APK_SHA256\` |
+
+          **Install:** download the \`.apk\` on an Android device and allow installs from this browser.
+          The \`.aab\` is the Play Store upload artifact.
+
+          Signing certificate SHA-256:
+          \`\`\`
+          $FINGERPRINT
+          \`\`\`
+          This must match \`https://$host/.well-known/assetlinks.json\`
+          (attached as \`assetlinks.json\`) or the app shows a URL bar at the top.
+          EOF
+
+          flags=(--repo "$RELEASE_REPO" --title "$TITLE" --notes-file "$notes")
+          if [ "$PRERELEASE" = "true" ]; then
+            flags+=(--prerelease)
+          fi
+
+          if gh release view "$TAG" --repo "$RELEASE_REPO" > /dev/null 2>&1; then
+            echo "Release $TAG exists, replacing assets"
+            gh release edit "$TAG" "${flags[@]}"
+            gh release upload "$TAG" "$APK" "$AAB" "$OUT_DIR/assetlinks.json" --repo "$RELEASE_REPO" --clobber
+          else
+            gh release create "$TAG" "$APK" "$AAB" "$OUT_DIR/assetlinks.json" "${flags[@]}"
+          fi
+
+          echo "release_url=$(gh release view "$TAG" --repo "$RELEASE_REPO" --json url -q .url)" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        if: always()
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          FINGERPRINT: ${{ steps.build.outputs.fingerprint }}
+        run: |
+          {
+            echo "### ${{ matrix.app.displayName }} — $VERSION_NAME"
+            echo ""
+            echo "- Package: \`${{ matrix.app.packageId }}\`"
+            echo "- versionCode: \`${{ steps.version.outputs.code }}\`"
+            echo "- APK size: ${{ steps.artifacts.outputs.apk_size }}"
+            echo "- Signing key: ${{ steps.build.outputs.signing_key }}"
+            echo "- Certificate SHA-256: \`$FINGERPRINT\`"
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "- Dry run: no Release was published"
+            else
+              echo "- Tag: \`${{ matrix.app.tagPrefix }}$VERSION_NAME\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "tms",
+    "displayName": "TDF Task Manager",
+    "dir": "android/tms",
+    "manifestUrl": "https://app.tdfjewellery.com/manifest.json",
+    "packageId": "com.tdfjewellery.tasks",
+    "assetBaseName": "TDF-Tasks",
+    "tagPrefix": "tms-v",
+    "versionNameBase": "1.0",
+    "versionCodeOffset": 0,
+    "keystoreSecret": "TMS_ANDROID_KEYSTORE_BASE64",
+    "keystorePasswordSecret": "TMS_ANDROID_KEYSTORE_PASSWORD",
+    "keyPasswordSecret": "TMS_ANDROID_KEY_PASSWORD",
+    "releaseRepo": ""
+  }
+]
